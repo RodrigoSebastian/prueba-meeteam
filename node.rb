@@ -9,7 +9,8 @@ class Node
     @neighbors = []
     @accepted_states = {}            # Estados propuestos aceptados por este nodo
     @votes = {}                      # Votos recibidos para cada estado
-  
+    @partitioned_neighbors = []      # Vecinos aislados
+
     log_event("Nodo con ID '#{id}' creado")
   end
 
@@ -23,8 +24,9 @@ class Node
 
   # Muestra todos los vecinos
   def show_neighbors()
+    puts "Vecinos del Nodo #{@id}:"
     @neighbors.each do |neighbor|
-      puts "Vecino: #{neighbor.id}"
+      puts "\t Vecino #{neighbor.id}"
     end
   end
 
@@ -59,17 +61,6 @@ class Node
     send_message({ type: :proposal, state: new_state })
   end
 
-  # Maneja un mensaje de voto
-  def handle_vote(state, sender)
-    @votes[state] ||= 0
-    @votes[state] += 1
-
-    if @votes[state] > majority_threshold
-      log_event("Consenso alcanzado con estado: #{state}")
-      @state = state
-    end
-  end
-
   # Calcula el umbral de mayoría
   def majority_threshold
     (@neighbors.size + 1) / 2
@@ -84,6 +75,22 @@ class Node
     end
 
     formatted_log
+  end
+
+  # Aislar un nodo de sus vecinos
+  def simulate_partition(partitioned_neighbors)
+    @partitioned_neighbors = partitioned_neighbors
+    @neighbors -= partitioned_neighbors
+
+    log_event("Simulando partición con vecinos: #{partitioned_neighbors.map(&:id)}")
+  end
+
+  # Restablecer la conexión con los vecinos
+  def restore_partition()
+    @neighbors += @partitioned_neighbors
+    @partitioned_neighbors = []
+
+    log_event("Restableciendo conexión con vecinos")
   end
 
   private
@@ -103,6 +110,17 @@ class Node
 
     else
       log_event("Rechazando estado propuesto: #{state}")
+    end
+  end
+
+  # Maneja un mensaje de voto
+  def handle_vote(state, sender)
+    @votes[state] ||= 0
+    @votes[state] += 1
+
+    if @votes[state] > majority_threshold
+      log_event("Consenso alcanzado con estado: #{state}")
+      @state = state
     end
   end
 end
