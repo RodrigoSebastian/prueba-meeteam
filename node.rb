@@ -7,7 +7,6 @@ class Node
     @state = nil
     @log = []
     @neighbors = []
-    @accepted_states = {}            # Estados propuestos aceptados por este nodo
     @votes = {}                      # Votos recibidos para cada estado
     @partitioned_neighbors = []      # Vecinos aislados
 
@@ -90,6 +89,8 @@ class Node
     @neighbors += @partitioned_neighbors
     @partitioned_neighbors = []
 
+    @neighbors.sort_by!(&:id)
+
     log_event("Restableciendo conexión con vecinos")
   end
 
@@ -102,9 +103,9 @@ class Node
 
   # Maneja un mensaje de propuesta
   def handle_proposal(state, sender)
-    if @accepted_states[state].nil? || state > @accepted_states[state]
-
-      @accepted_states[state] = state
+    if @state.nil? || state > @state
+      @state = state
+      
       log_event("Aceptando estado propuesto: #{state}")
       send_message({ type: :vote, state: state })
 
